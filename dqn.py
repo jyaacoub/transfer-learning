@@ -27,37 +27,32 @@ class DQN:
         self.frame_width = frame_width
         self.agent_history_length = agent_history_length
         
-        self.input = tf.placeholder(shape=[None, self.frame_height, 
+        self.input = tf.keras.layers.Input(shape=[None, self.frame_height, 
                                            self.frame_width, self.agent_history_length], 
-                                    dtype=tf.float32)
-        # Normalizing the input
-        self.input_scaled = self.input/255
-        
+                                            dtype=tf.float32)/255
+
         # Convolutional layers
-        self.conv1 = tf.layers.conv2d(
-            inputs=self.input_scaled, filters=32, kernel_size=[8, 8], strides=4,
-            kernel_initializer=tf.variance_scaling_initializer(scale=2),
-            padding="valid", activation=tf.nn.relu, use_bias=False, name='conv1')
-        self.conv2 = tf.layers.conv2d(
-            inputs=self.conv1, filters=64, kernel_size=[4, 4], strides=2, 
-            kernel_initializer=tf.variance_scaling_initializer(scale=2),
-            padding="valid", activation=tf.nn.relu, use_bias=False, name='conv2')
-        self.conv3 = tf.layers.conv2d(
-            inputs=self.conv2, filters=64, kernel_size=[3, 3], strides=1, 
-            kernel_initializer=tf.variance_scaling_initializer(scale=2),
-            padding="valid", activation=tf.nn.relu, use_bias=False, name='conv3')
-        self.conv4 = tf.layers.conv2d(
-            inputs=self.conv3, filters=hidden, kernel_size=[7, 7], strides=1, 
-            kernel_initializer=tf.variance_scaling_initializer(scale=2),
-            padding="valid", activation=tf.nn.relu, use_bias=False, name='conv4')
-        
+        x = tf.keras.layers.Conv2D(filters=32, kernel_size=[8, 8], strides=4,
+            padding="valid", activation=tf.nn.relu, use_bias=False, name='conv1')(self.input)
+
+        x = tf.keras.layers.Conv2D(filters=64, kernel_size=[4, 4], strides=2,
+            padding="valid", activation=tf.nn.relu, use_bias=False, name='conv2')(x)
+
+        x = tf.keras.layers.Conv2D(filters=64, kernel_size=[3, 3], strides=1,
+            padding="valid", activation=tf.nn.relu, use_bias=False, name='conv3')(x)
+
+        x = tf.keras.layers.Conv2D(filters=hidden, kernel_size=[7, 7], strides=1,
+            padding="valid", activation=tf.nn.relu, use_bias=False, name='conv4')(x)
+
         # Splitting into value and advantage stream
-        self.value_stream, self.advantagestream = tf.split(self.conv4, 2, 3)
+        self.value_stream, self.advantagestream = tf.split(x, 2, 3)
         self.value_stream = tf.layers.flatten(self.value_stream)
         self.advantagestream = tf.layers.flatten(self.advantagestream)
+
         self.advantage = tf.layers.dense(
             inputs=self.advantagestream, units=self.n_actions,
             kernel_initializer=tf.variance_scaling_initializer(scale=2), name="advantage")
+
         self.value = tf.layers.dense(
             inputs=self.value_stream, units=1, 
             kernel_initializer=tf.variance_scaling_initializer(scale=2), name='value')
@@ -185,5 +180,4 @@ class TargetNetworkUpdater:
         update_ops = self._update_target_vars()
         for copy_op in update_ops:
             sess.run(copy_op)
-
 
