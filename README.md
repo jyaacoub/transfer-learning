@@ -1,2 +1,2 @@
 # transfer-learning
-Transfer learning in Reinforcement Learning
+I am adapting this repo to work with latest version of tf
